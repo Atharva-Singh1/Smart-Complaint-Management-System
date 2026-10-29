@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}
+{% block title %}SCMS | Home{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Report civic issues. Follow every update.</h1>
+  <p class="lead">SCMS helps citizens submit municipal complaints, receive a tracking ID, and view progress. Department staff can review, assign, and resolve cases.</p>
+  <a class="button" href="{% url 'register' %}">Create citizen account</a>
+  <a class="button secondary" href="{% url 'login' %}">Log in</a>
+</section>
+<section class="grid">
+  <div class="card"><h3>1. Register</h3><p class="small">Citizens can create an account using their name, email, phone number, and password.</p></div>
+  <div class="card"><h3>2. Authenticate</h3><p class="small">Users can sign in using their email address or phone number.</p></div>
+  <div class="card"><h3>3. Access by role</h3><p class="small">Citizen, staff, and administrator accounts are separated for future features.</p></div>
+</section>
+{% endblock %}
