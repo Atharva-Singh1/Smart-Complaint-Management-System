@@ -7,8 +7,11 @@ This file gives repository-wide context and operating instructions to Codex and 
 - Repository: `Atharva-Singh1/Smart-Complaint-Management-System`.
 - Product: Smart Complaint Management System (SCMS), a civic complaint lodging, triage, tracking, resolution, and feedback platform.
 - Current repository root contains `README.md`, `TEAM-8.pdf` (SRS v2.0), `TEAM-8_Test_Plan.pdf` (STP v1.0), and `SCMS_SAD_Team8.pdf` (Software Architecture and Design Specification v1.0, Draft, dated 04-10-2026).
-- The repository currently contains documentation, not an application implementation. Inspect the live checkout before assuming source folders, languages, frameworks, commands, or existing test coverage.
-- GitHub currently has 29 open issues, #1–#29. Do not assume a requirement is implemented because its issue exists.
+- The repository now contains an initial Django 5.2.18 application under `backend/`, plus GitHub Actions CI and pytest tests. Inspect the live checkout before assuming current coverage or completeness.
+- Checked-in local development settings use SQLite. Confirm the intended target/deployment database with the team before changing it.
+- As of 2026-10-31, 27 of issues #1–#29 are open and #9–#10 are closed. Treat this as a dated snapshot; check GitHub for current status. Open issues may have partial or merged work, and a merged PR alone does not prove every acceptance criterion is met.
+- Merged implementation PRs: #31 authentication/roles/lockout foundation; #32 complaint lodging/evidence limits/tracking IDs; #33 public tracking/citizen dashboard/audit history; #34 staff triage/assignment/status updates. Verify CI and acceptance evidence before closing issues or claiming requirements are done.
+- Scope gaps to verify: #4 requires department, urgency, status, and SLA filters; the #34 change visibly filters status and ward. #15 requires resolution proof as well as notes; #16 requires a justification code, not just a reason. Confirm these criteria before closure.
 
 ## Source-of-truth documents
 
@@ -34,9 +37,9 @@ If these documents conflict, identify the exact requirement/section and propose 
 
 Do not choose these on behalf of the team:
 
-- Backend: Django 5.x, Flask 3.x, or Laravel 11.x.
-- Database: PostgreSQL 15+ or MySQL 8.0.
-- Session strategy: JWT in secure HttpOnly cookies or encrypted server-side Redis sessions.
+- Backend framework: the implementation has selected Django 5.2.18. Treat the SAD's Django/Flask/Laravel alternatives as superseded unless the team explicitly revises this decision.
+- Database: checked-in local settings use SQLite. The intended deployment database remains to be confirmed; do not infer a production choice from comments.
+- Session strategy: the application currently uses Django's session/authentication framework. Confirm production session storage and security settings before introducing JWT or Redis.
 - MFA appears in parts of the SRS/SAD overview but has no corresponding functional requirement.
 - Lifecycle states `Under Review` and `Appealed` are not fully specified as transitions/requirements.
 - Proposed API routes/status codes need implementation review and OpenAPI documentation.
@@ -51,7 +54,7 @@ If work depends on an open decision, stop before locking in the design. State th
 - Use parameterized ORM/database operations. Do not construct SQL from untrusted input.
 - Never log passwords, tokens, or unmasked citizen PII. Never commit secrets, credentials, real complaint data, or production keys.
 - Require TLS 1.3; redirect HTTP to HTTPS. Use secure, HttpOnly, SameSite cookies if cookie sessions are selected.
-- Store passwords with salted Argon2id or bcrypt at the SRS cost factor; enforce five-failure/30-minute lockout and 30-minute idle session timeout as specified.
+- Store passwords with salted Argon2id or bcrypt at the SRS cost factor; enforce the SRS lockout threshold and 30-minute idle session timeout. Resolve the discrepancy between issue #8's sixth-attempt wording and the SRS/test plan before treating lockout behavior as accepted.
 - Validate evidence by content/magic bytes, allowing only JPEG, PNG, and PDF; enforce at most five files and 5 MB per file.
 - Public tracking must mask personal data. RBAC must deny cross-role access (HTTP 403).
 - Maintain an append-only audit trail with previous/new status, actor ID, and timestamp.
