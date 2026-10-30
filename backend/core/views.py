@@ -1,9 +1,14 @@
 from accounts.forms import RegistrationForm
+from accounts.models import User
 from accounts.services import authenticate_credentials
 from django.contrib import messages
 from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
+
+from .forms import ComplaintForm
+from .models import Complaint, Evidence
 
 
 def home(request):
@@ -47,4 +52,34 @@ def sign_out(request):
 def dashboard(request):
     if not request.user.is_authenticated:
         return redirect("login")
-    return render(request, "core/dashboard.html")
+    if request.user.role != User.Role.CITIZEN:
+        return render(request, "core/dashboard.html", {"complaints": []})
+    return render(
+        request,
+        "core/dashboard.html",
+        {"complaints": Complaint.objects.filter(citizen=request.user)},
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def lodge_complaint(request):
+    if request.user.role != User.Role.CITIZEN:
+        messages.error(request, "Only citizen accounts can lodge complaints.")
+        return redirect("dashboard")
+    form = ComplaintForm(request.POST or None, request.FILES or None)
+    if request.method == "POST" and form.is_valid():
+        complaint = Complaint.create_with_tracking_id(
+            citizen=request.user,
+            category=form.cleaned_data["category"],
+            title=form.cleaned_data["title"],
+            description=form.cleaned_data["description"],
+            ward=form.cleaned_data["ward"],
+        )
+        for file in form.cleaned_data["evidence_files"]:
+            Evidence.objects.create(complaint=complaint, file=file)
+        messages.success(
+            request, f"Complaint submitted. Your tracking ID is {complaint.tracking_id}."
+        )
+        return redirect("dashboard")
+    return render(request, "core/lodge.html", {"form": form})

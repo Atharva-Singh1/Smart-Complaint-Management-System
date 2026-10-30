@@ -1,0 +1,3 @@
+{% extends "core/base.html" %}
+{% block title %}SCMS | Lodge complaint{% endblock %}
+{% block content %}<section class="card" style="max-width:720px"><h1>Lodge a complaint</h1><p class="small">You can upload up to five JPG, PNG, or PDF files, each up to 5 MB.</p><form method="post" enctype="multipart/form-data">{% csrf_token %}{% for field in form %}<label>{{ field.label }}</label>{{ field }}{{ field.errors }}{% endfor %}<button>Submit complaint</button></form></section>{% endblock %}
