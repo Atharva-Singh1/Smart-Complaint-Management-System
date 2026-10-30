@@ -11,4 +11,6 @@ urlpatterns = [
     path("complaints/new/", views.lodge_complaint, name="lodge_complaint"),
     path("track/", views.track, name="track"),
     path("complaints/<str:tracking_id>/", views.complaint_detail, name="complaint_detail"),
+    path("triage/", views.triage, name="triage"),
+    path("triage/<str:tracking_id>/", views.manage_complaint, name="manage_complaint"),
 ]
