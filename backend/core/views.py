@@ -4,7 +4,8 @@ from accounts.services import authenticate_credentials
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import ComplaintForm
@@ -83,3 +84,29 @@ def lodge_complaint(request):
         )
         return redirect("dashboard")
     return render(request, "core/lodge.html", {"form": form})
+
+
+@require_http_methods(["GET", "POST"])
+def track(request):
+    tracking_id = request.POST.get("tracking_id") or request.GET.get("tracking_id")
+    complaint = None
+    if tracking_id:
+        complaint = Complaint.objects.filter(tracking_id__iexact=tracking_id.strip()).first()
+        if complaint is None:
+            messages.error(request, "No complaint was found for that tracking ID.")
+    return render(
+        request, "core/track.html", {"complaint": complaint, "tracking_id": tracking_id or ""}
+    )
+
+
+@login_required
+def complaint_detail(request, tracking_id):
+    complaint = get_object_or_404(
+        Complaint.objects.select_related("citizen", "assigned_to").prefetch_related(
+            "history", "evidence"
+        ),
+        tracking_id=tracking_id,
+    )
+    if request.user.role == User.Role.CITIZEN and complaint.citizen_id != request.user.id:
+        raise Http404
+    return render(request, "core/complaint_detail.html", {"complaint": complaint})
