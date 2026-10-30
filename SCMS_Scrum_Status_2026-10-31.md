@@ -6,7 +6,7 @@
 
 ## Current repository state
 
-- Latest activity on `main` is the merge of PR #34 on 30 October 2026.
+- Latest implementation merge is PR #34 (30 October 2026). The most recent commit is [feee519](https://github.com/Atharva-Singh1/Smart-Complaint-Management-System/commit/feee5193243c86f030789edd0b9236ffc69ef377), which added this status note and the refreshed `AGENTS.md`.
 - Merged implementation PRs:
   - [#31 Authentication, roles, and account lockout foundation](https://github.com/Atharva-Singh1/Smart-Complaint-Management-System/pull/31)
   - [#32 Complaint lodging, evidence limits, and tracking IDs](https://github.com/Atharva-Singh1/Smart-Complaint-Management-System/pull/32)
@@ -78,4 +78,4 @@ These are planning suggestions, not GitHub assignments. Rebalance after teammate
 
 ## Access / publication note
 
-The connected GitHub API refused branch creation with HTTP 403, and the local GitHub CLI reports an invalid token. This note and the refreshed `AGENTS.md` are local drafts under `outputs/`; neither has been published to the repository. Reauthenticate or restore repository write access before creating the review branch and pull request.
+The status note and refreshed `AGENTS.md` are committed on `main` in [commit feee519](https://github.com/Atharva-Singh1/Smart-Complaint-Management-System/commit/feee5193243c86f030789edd0b9236ffc69ef377). This document remains a planning draft: no sprint dates, estimates, final scope, issue assignments, or issue-state changes were committed.
