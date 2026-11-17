@@ -83,6 +83,10 @@ def lodge_complaint(request):
             request, f"Complaint submitted. Your tracking ID is {complaint.tracking_id}."
         )
         return redirect("dashboard")
+    if request.method == "POST":
+        evidence_errors = form.errors.as_data().get("evidence_files", [])
+        if any(error.code == "unsupported_media_type" for error in evidence_errors):
+            return render(request, "core/lodge.html", {"form": form}, status=415)
     return render(request, "core/lodge.html", {"form": form})
 
 
