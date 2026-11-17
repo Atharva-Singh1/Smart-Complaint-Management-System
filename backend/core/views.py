@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import AssignmentForm, ComplaintForm, StatusForm
-from .models import AssignmentEmail, Complaint, Evidence, ResolutionProof
+from .models import AssignmentEmail, Complaint, Evidence, RejectionEmail, ResolutionProof
 
 
 def home(request):
@@ -179,6 +179,7 @@ def manage_complaint(request, tracking_id):
             new_status = status_form.cleaned_data["status"]
             note = status_form.cleaned_data["note"]
             proof_image = status_form.cleaned_data["proof_image"]
+            rejection_code = status_form.cleaned_data["rejection_code"]
             if new_status == Complaint.Status.RESOLVED and len(note.strip()) < 20:
                 status_form.add_error(
                     "note", "A resolution note of at least 20 characters is required."
@@ -191,6 +192,8 @@ def manage_complaint(request, tracking_id):
                 status_form.add_error("proof_image", "At least one proof image is required.")
             elif new_status == Complaint.Status.REJECTED and not note.strip():
                 status_form.add_error("note", "A rejection reason is required.")
+            elif new_status == Complaint.Status.REJECTED and not rejection_code:
+                status_form.add_error("rejection_code", "A justification code is required.")
             else:
                 with transaction.atomic():
                     if new_status == Complaint.Status.RESOLVED:
@@ -201,8 +204,13 @@ def manage_complaint(request, tracking_id):
                             )
                     if new_status == Complaint.Status.REJECTED:
                         complaint.rejection_reason = note
-                    complaint.save(update_fields=["resolution_note", "rejection_reason", "updated_at"])
+                        complaint.rejection_code = rejection_code
+                    complaint.save(
+                        update_fields=["resolution_note", "rejection_reason", "rejection_code", "updated_at"]
+                    )
                     complaint.change_status(actor=request.user, new_status=new_status, note=note)
+                    if new_status == Complaint.Status.REJECTED:
+                        RejectionEmail.objects.create(complaint=complaint, citizen=complaint.citizen)
                 messages.success(request, "Complaint status updated.")
                 return redirect("manage_complaint", tracking_id=tracking_id)
     return render(
