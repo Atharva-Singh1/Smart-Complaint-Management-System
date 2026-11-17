@@ -22,6 +22,12 @@ class Complaint(models.Model):
         STREETLIGHT = "streetlight", "Streetlights"
         OTHER = "other", "Other"
 
+    class RejectionCode(models.TextChoices):
+        DUPLICATE = "duplicate", "Duplicate complaint"
+        INVALID = "invalid", "Invalid complaint"
+        INSUFFICIENT_INFO = "insufficient_info", "Insufficient information"
+        OUT_OF_SCOPE = "out_of_scope", "Outside department scope"
+
     tracking_id = models.CharField(max_length=24, unique=True, editable=False)
     citizen = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="complaints"
@@ -41,6 +47,7 @@ class Complaint(models.Model):
     internal_note = models.TextField(blank=True, max_length=1000)
     resolution_note = models.TextField(blank=True, max_length=2000)
     rejection_reason = models.TextField(blank=True, max_length=1000)
+    rejection_code = models.CharField(blank=True, choices=RejectionCode.choices, max_length=32)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -136,6 +143,18 @@ class AssignmentEmail(models.Model):
 
     complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name="assignment_emails")
     assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    dead_lettered = models.BooleanField(default=False)
+
+
+class RejectionEmail(models.Model):
+    """Durable outbox record for a citizen rejection explanation email."""
+
+    complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name="rejection_emails")
+    citizen = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     next_attempt_at = models.DateTimeField(default=timezone.now)
     attempts = models.PositiveSmallIntegerField(default=0)

@@ -127,3 +127,7 @@ class StatusForm(forms.Form):
         validators=[FileExtensionValidator(["jpg", "jpeg", "png"]), validate_proof_image_content],
         help_text="Required when setting status to Resolved.",
     )
+    rejection_code = forms.ChoiceField(
+        choices=[("", "Select a justification code")] + list(Complaint.RejectionCode.choices),
+        required=False,
+    )
