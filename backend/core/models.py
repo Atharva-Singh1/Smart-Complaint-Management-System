@@ -69,6 +69,7 @@ class Complaint(models.Model):
                 new_status=cls.Status.SUBMITTED,
                 note="Complaint submitted",
             )
+            StatusNotification.queue_for_citizen(complaint, cls.Status.SUBMITTED)
             return complaint
 
     def change_status(self, *, actor, new_status, note=""):
@@ -83,6 +84,7 @@ class Complaint(models.Model):
                 new_status=new_status,
                 note=note,
             )
+            StatusNotification.queue_for_citizen(self, new_status)
 
 
 class Evidence(models.Model):
@@ -160,3 +162,40 @@ class RejectionEmail(models.Model):
     attempts = models.PositiveSmallIntegerField(default=0)
     sent_at = models.DateTimeField(null=True, blank=True)
     dead_lettered = models.BooleanField(default=False)
+
+
+class StatusNotification(models.Model):
+    """Durable, retryable email/SMS outbox for complaint status changes."""
+
+    class Channel(models.TextChoices):
+        EMAIL = "email", "Email"
+        SMS = "sms", "SMS"
+
+    complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name="status_notifications")
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=Complaint.Status.choices)
+    channel = models.CharField(max_length=10, choices=Channel.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    dead_lettered = models.BooleanField(default=False)
+
+    @classmethod
+    def queue_for_citizen(cls, complaint, status):
+        cls.objects.bulk_create(
+            [
+                cls(
+                    complaint=complaint,
+                    recipient=complaint.citizen,
+                    status=status,
+                    channel=cls.Channel.EMAIL,
+                ),
+                cls(
+                    complaint=complaint,
+                    recipient=complaint.citizen,
+                    status=status,
+                    channel=cls.Channel.SMS,
+                ),
+            ]
+        )
