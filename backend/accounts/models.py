@@ -1,7 +1,11 @@
+from django.contrib.auth import SESSION_KEY
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.sessions.models import Session
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
+from django.db.models.signals import post_save, pre_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 
@@ -64,3 +68,30 @@ class LockoutEmail(models.Model):
     attempts = models.PositiveSmallIntegerField(default=0)
     sent_at = models.DateTimeField(null=True, blank=True)
     dead_lettered = models.BooleanField(default=False)
+
+
+@receiver(pre_save, sender=User)
+def remember_role_change(sender, instance, **kwargs):
+    """Record role changes so stale authenticated sessions can be revoked."""
+    if instance._state.adding:
+        return
+    previous_role = sender.objects.filter(pk=instance.pk).values_list("role", flat=True).first()
+    instance._role_changed = previous_role is not None and previous_role != instance.role
+
+
+@receiver(post_save, sender=User)
+def revoke_sessions_after_role_change(sender, instance, created, **kwargs):
+    """Force fresh authentication after a privilege change.
+
+    Django cycles a session key at login. Deleting old user sessions here prevents
+    a pre-change cookie from continuing to carry the old privilege context.
+    """
+    if created or not getattr(instance, "_role_changed", False):
+        return
+    for session in Session.objects.iterator():
+        try:
+            session_data = session.get_decoded()
+        except Exception:  # Corrupt/expired sessions are not security-relevant.
+            continue
+        if str(session_data.get(SESSION_KEY)) == str(instance.pk):
+            session.delete()
