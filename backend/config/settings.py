@@ -46,6 +46,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 # SQLite keeps the first team demo simple: no WSL, Docker, or database server is needed.
 DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
 AUTH_USER_MODEL = "accounts.User"
+# Passwords are stored with Argon2id. The hasher generates a fresh random salt
+# for every password, so the same password never produces the same stored value.
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+]
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
