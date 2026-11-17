@@ -4,8 +4,19 @@ from accounts.models import User
 from django import forms
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 
 from .models import Complaint
+
+
+def validate_proof_image_content(file):
+    """Accept only JPEG or PNG bytes for a resolution proof image."""
+    signature = file.read(8)
+    file.seek(0)
+    is_jpeg = signature.startswith(b"\xff\xd8\xff")
+    is_png = signature.startswith(b"\x89PNG\r\n\x1a\n")
+    if not (is_jpeg or is_png):
+        raise forms.ValidationError("Resolution proof must be a genuine JPEG or PNG image.")
 
 
 class RegistrationForm(forms.ModelForm):
@@ -111,3 +122,8 @@ class StatusForm(forms.Form):
         ]
     )
     note = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False)
+    proof_image = forms.FileField(
+        required=False,
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png"]), validate_proof_image_content],
+        help_text="Required when setting status to Resolved.",
+    )
