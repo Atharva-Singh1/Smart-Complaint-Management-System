@@ -87,6 +87,20 @@ class Evidence(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
+class ResolutionProof(models.Model):
+    """Photographic proof supplied by staff before a complaint is resolved."""
+
+    complaint = models.ForeignKey(
+        Complaint, on_delete=models.CASCADE, related_name="resolution_proofs"
+    )
+    image = models.FileField(
+        upload_to="resolution-proofs/%Y/%m/",
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png"])],
+    )
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
 class AppendOnlyAuditQuerySet(models.QuerySet):
     def update(self, **kwargs):
         raise ValidationError("Audit records are append-only and cannot be updated.")

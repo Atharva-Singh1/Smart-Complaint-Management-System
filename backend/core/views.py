@@ -1,4 +1,5 @@
 from functools import wraps
+
 from accounts.forms import RegistrationForm
 from accounts.models import User
 from accounts.services import authenticate_credentials
@@ -12,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import AssignmentForm, ComplaintForm, StatusForm
-from .models import AssignmentEmail, Complaint, Evidence
+from .models import AssignmentEmail, Complaint, Evidence, ResolutionProof
 
 
 def home(request):
@@ -159,7 +160,7 @@ def manage_complaint(request, tracking_id):
         Complaint.objects.select_related("citizen", "assigned_to"), tracking_id=tracking_id
     )
     assignment_form = AssignmentForm(request.POST or None, prefix="assign")
-    status_form = StatusForm(request.POST or None, prefix="status")
+    status_form = StatusForm(request.POST or None, request.FILES or None, prefix="status")
     if request.method == "POST":
         if "assign-submit" in request.POST and assignment_form.is_valid():
             with transaction.atomic():
@@ -177,19 +178,31 @@ def manage_complaint(request, tracking_id):
         if "status-submit" in request.POST and status_form.is_valid():
             new_status = status_form.cleaned_data["status"]
             note = status_form.cleaned_data["note"]
+            proof_image = status_form.cleaned_data["proof_image"]
             if new_status == Complaint.Status.RESOLVED and len(note.strip()) < 20:
                 status_form.add_error(
                     "note", "A resolution note of at least 20 characters is required."
                 )
+            elif (
+                new_status == Complaint.Status.RESOLVED
+                and proof_image is None
+                and not complaint.resolution_proofs.exists()
+            ):
+                status_form.add_error("proof_image", "At least one proof image is required.")
             elif new_status == Complaint.Status.REJECTED and not note.strip():
                 status_form.add_error("note", "A rejection reason is required.")
             else:
-                if new_status == Complaint.Status.RESOLVED:
-                    complaint.resolution_note = note
-                if new_status == Complaint.Status.REJECTED:
-                    complaint.rejection_reason = note
-                complaint.save(update_fields=["resolution_note", "rejection_reason", "updated_at"])
-                complaint.change_status(actor=request.user, new_status=new_status, note=note)
+                with transaction.atomic():
+                    if new_status == Complaint.Status.RESOLVED:
+                        complaint.resolution_note = note
+                        if proof_image is not None:
+                            ResolutionProof.objects.create(
+                                complaint=complaint, image=proof_image, uploaded_by=request.user
+                            )
+                    if new_status == Complaint.Status.REJECTED:
+                        complaint.rejection_reason = note
+                    complaint.save(update_fields=["resolution_note", "rejection_reason", "updated_at"])
+                    complaint.change_status(actor=request.user, new_status=new_status, note=note)
                 messages.success(request, "Complaint status updated.")
                 return redirect("manage_complaint", tracking_id=tracking_id)
     return render(
