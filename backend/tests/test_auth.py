@@ -43,3 +43,18 @@ def test_staff_account_can_log_in(client):
         reverse("login"), {"identifier": user.email, "password": "StrongPass2026!"}
     )
     assert response.status_code == 302
+
+
+def test_passwords_use_salted_argon2id_hashes():
+    first = User.objects.create_user(
+        "first@example.com", "+919000000003", "First Citizen", "StrongPass2026!"
+    )
+    second = User.objects.create_user(
+        "second@example.com", "+919000000004", "Second Citizen", "StrongPass2026!"
+    )
+
+    assert first.password.startswith("argon2$")
+    assert second.password.startswith("argon2$")
+    assert first.password != "StrongPass2026!"
+    assert first.password != second.password
+    assert first.check_password("StrongPass2026!")
