@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from accounts.models import User
 from django import forms
 from django.contrib.auth.password_validation import validate_password
@@ -58,13 +60,35 @@ class ComplaintForm(forms.ModelForm):
         files = self.cleaned_data["evidence_files"]
         if len(files) > 5:
             raise forms.ValidationError("You may upload a maximum of five files.")
-        allowed = {"image/jpeg", "image/png", "application/pdf"}
         for file in files:
             if file.size > 5 * 1024 * 1024:
                 raise forms.ValidationError(f"{file.name} is larger than 5 MB.")
-            if file.content_type not in allowed:
-                raise forms.ValidationError("Only JPG, PNG, and PDF evidence is allowed.")
+            detected_type = self._detect_file_type(file)
+            extension = Path(file.name).suffix.lower()
+            allowed_extensions = {
+                "image/jpeg": {".jpg", ".jpeg"},
+                "image/png": {".png"},
+                "application/pdf": {".pdf"},
+            }
+            if detected_type is None or extension not in allowed_extensions.get(detected_type, set()):
+                raise forms.ValidationError(
+                    "Only genuine JPG, PNG, and PDF evidence is allowed.",
+                    code="unsupported_media_type",
+                )
         return files
+
+    @staticmethod
+    def _detect_file_type(file):
+        """Identify the actual file content; browser MIME headers are untrusted."""
+        signature = file.read(16)
+        file.seek(0)
+        if signature.startswith(b"\xff\xd8\xff"):
+            return "image/jpeg"
+        if signature.startswith(b"\x89PNG\r\n\x1a\n"):
+            return "image/png"
+        if signature.startswith(b"%PDF-"):
+            return "application/pdf"
+        return None
 
 
 class AssignmentForm(forms.Form):
