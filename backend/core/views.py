@@ -1,9 +1,12 @@
+from functools import wraps
+
 from accounts.forms import RegistrationForm
 from accounts.models import User
 from accounts.services import authenticate_credentials
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
@@ -66,8 +69,7 @@ def dashboard(request):
 @require_http_methods(["GET", "POST"])
 def lodge_complaint(request):
     if request.user.role != User.Role.CITIZEN:
-        messages.error(request, "Only citizen accounts can lodge complaints.")
-        return redirect("dashboard")
+        raise PermissionDenied("Only citizen accounts can lodge complaints.")
     form = ComplaintForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         complaint = Complaint.create_with_tracking_id(
@@ -120,8 +122,20 @@ def staff_or_admin(user):
     return user.is_authenticated and user.role in {User.Role.STAFF, User.Role.ADMIN}
 
 
+def staff_or_admin_required(view):
+    """Return HTTP 403 when an authenticated user lacks a privileged role."""
+
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        if not staff_or_admin(request.user):
+            raise PermissionDenied("Staff or Administrator access is required.")
+        return view(request, *args, **kwargs)
+
+    return wrapped
+
+
 @login_required
-@user_passes_test(staff_or_admin)
+@staff_or_admin_required
 def triage(request):
     complaints = Complaint.objects.select_related("citizen", "assigned_to")
     status = request.GET.get("status")
@@ -138,7 +152,7 @@ def triage(request):
 
 
 @login_required
-@user_passes_test(staff_or_admin)
+@staff_or_admin_required
 @require_http_methods(["GET", "POST"])
 def manage_complaint(request, tracking_id):
     complaint = get_object_or_404(
