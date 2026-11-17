@@ -115,3 +115,15 @@ class AuditLog(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Audit records are append-only and cannot be deleted directly.")
+
+
+class AssignmentEmail(models.Model):
+    """Durable notification job for a newly assigned complaint."""
+
+    complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name="assignment_emails")
+    assignee = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    dead_lettered = models.BooleanField(default=False)

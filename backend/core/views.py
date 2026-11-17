@@ -1,18 +1,18 @@
 from functools import wraps
-
 from accounts.forms import RegistrationForm
 from accounts.models import User
 from accounts.services import authenticate_credentials
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import AssignmentForm, ComplaintForm, StatusForm
-from .models import Complaint, Evidence
+from .models import AssignmentEmail, Complaint, Evidence
 
 
 def home(request):
@@ -162,14 +162,16 @@ def manage_complaint(request, tracking_id):
     status_form = StatusForm(request.POST or None, prefix="status")
     if request.method == "POST":
         if "assign-submit" in request.POST and assignment_form.is_valid():
-            complaint.assigned_to = assignment_form.cleaned_data["assigned_to"]
-            complaint.internal_note = assignment_form.cleaned_data["internal_note"]
-            complaint.save(update_fields=["assigned_to", "internal_note", "updated_at"])
-            complaint.change_status(
-                actor=request.user,
-                new_status=Complaint.Status.ASSIGNED,
-                note="Assigned to department staff",
-            )
+            with transaction.atomic():
+                complaint.assigned_to = assignment_form.cleaned_data["assigned_to"]
+                complaint.internal_note = assignment_form.cleaned_data["internal_note"]
+                complaint.save(update_fields=["assigned_to", "internal_note", "updated_at"])
+                complaint.change_status(
+                    actor=request.user,
+                    new_status=Complaint.Status.ASSIGNED,
+                    note="Assigned to department staff",
+                )
+                AssignmentEmail.objects.create(complaint=complaint, assignee=complaint.assigned_to)
             messages.success(request, "Complaint assigned successfully.")
             return redirect("manage_complaint", tracking_id=tracking_id)
         if "status-submit" in request.POST and status_form.is_valid():
@@ -195,3 +197,5 @@ def manage_complaint(request, tracking_id):
         "core/manage_complaint.html",
         {"complaint": complaint, "assignment_form": assignment_form, "status_form": status_form},
     )
+from functools import wraps
+
