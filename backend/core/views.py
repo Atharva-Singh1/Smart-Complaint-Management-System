@@ -1,3 +1,4 @@
+from functools import wraps
 from accounts.forms import RegistrationForm
 from accounts.models import User
 from accounts.services import authenticate_credentials
