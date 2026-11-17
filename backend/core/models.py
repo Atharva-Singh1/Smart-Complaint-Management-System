@@ -1,6 +1,7 @@
 import secrets
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models, transaction
 from django.utils import timezone
@@ -64,12 +65,17 @@ class Complaint(models.Model):
             return complaint
 
     def change_status(self, *, actor, new_status, note=""):
-        previous = self.status
-        self.status = new_status
-        self.save()
-        AuditLog.objects.create(
-            complaint=self, actor=actor, previous_status=previous, new_status=new_status, note=note
-        )
+        with transaction.atomic():
+            previous = self.status
+            self.status = new_status
+            self.save()
+            AuditLog.objects.create(
+                complaint=self,
+                actor=actor,
+                previous_status=previous,
+                new_status=new_status,
+                note=note,
+            )
 
 
 class Evidence(models.Model):
@@ -81,6 +87,14 @@ class Evidence(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
+class AppendOnlyAuditQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("Audit records are append-only and cannot be updated.")
+
+    def delete(self):
+        raise ValidationError("Audit records are append-only and cannot be deleted directly.")
+
+
 class AuditLog(models.Model):
     complaint = models.ForeignKey(Complaint, on_delete=models.CASCADE, related_name="history")
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
@@ -89,5 +103,15 @@ class AuditLog(models.Model):
     note = models.TextField(blank=True, max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = AppendOnlyAuditQuerySet.as_manager()
+
     class Meta:
         ordering = ["created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValidationError("Audit records are append-only and cannot be updated.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Audit records are append-only and cannot be deleted directly.")
