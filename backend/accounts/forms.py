@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
 from .models import User
+from core.validators import validate_plain_text
 
 
 class RegistrationForm(forms.ModelForm):
@@ -12,6 +13,9 @@ class RegistrationForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["full_name", "email", "phone", "password"]
+
+    def clean_full_name(self):
+        return validate_plain_text(self.cleaned_data["full_name"])
 
     def clean(self):
         cleaned = super().clean()

@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 
 from .models import Complaint
+from .validators import validate_plain_text
 
 
 def validate_proof_image_content(file):
@@ -67,6 +68,15 @@ class ComplaintForm(forms.ModelForm):
         fields = ["category", "title", "description", "ward"]
         widgets = {"description": forms.Textarea(attrs={"rows": 5})}
 
+    def clean_title(self):
+        return validate_plain_text(self.cleaned_data["title"])
+
+    def clean_description(self):
+        return validate_plain_text(self.cleaned_data["description"])
+
+    def clean_ward(self):
+        return validate_plain_text(self.cleaned_data["ward"])
+
     def clean_evidence_files(self):
         files = self.cleaned_data["evidence_files"]
         if len(files) > 5:
@@ -113,6 +123,10 @@ class AssignmentForm(forms.Form):
         )
 
 
+    def clean_internal_note(self):
+        return validate_plain_text(self.cleaned_data["internal_note"])
+
+
 class StatusForm(forms.Form):
     status = forms.ChoiceField(
         choices=[
@@ -127,6 +141,9 @@ class StatusForm(forms.Form):
         validators=[FileExtensionValidator(["jpg", "jpeg", "png"]), validate_proof_image_content],
         help_text="Required when setting status to Resolved.",
     )
+    def clean_note(self):
+        return validate_plain_text(self.cleaned_data["note"])
+
     rejection_code = forms.ChoiceField(
         choices=[("", "Select a justification code")] + list(Complaint.RejectionCode.choices),
         required=False,
