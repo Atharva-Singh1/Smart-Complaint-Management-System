@@ -183,49 +183,9 @@ All demo accounts use password: `DemoPass2026!`
 | Department staff | `staff@scms.local` |
 | Administrator | `admin@scms.local` |
 
-## 14. Suggested presentation flow
 
-1. Explain problem, stakeholders, and project objective.
-2. Show landing page, registration/login.
-3. Show complaint lodging and generated tracking ID.
-4. Show public tracking and explain PII masking.
-5. Show citizen dashboard.
-6. Log in as staff and show triage, filters, assignment, and status update.
-7. Show audit history.
-8. Show report export.
-9. Summarize security controls and traceability.
 
-## 15. Common software-engineering viva answers
-
-### What is the difference between a user story and acceptance criteria?
-
-A user story describes the stakeholder goal. Acceptance criteria are objective conditions used to decide whether the story is complete.
-
-### Why RBAC?
-
-RBAC implements least privilege: citizens cannot perform staff actions, and staff/admin actions are protected.
-
-### Why is the audit trail append-only?
-
-Complaint decisions need accountability. An editable audit log would not reliably prove who changed a status, when, or why.
-
-### Why check both evidence extension and magic bytes?
-
-Extensions and browser MIME types can be forged. Magic bytes check the actual beginning of the file, helping reject a renamed executable.
-
-### Why use Django ORM?
-
-Django ORM provides a maintainable data-access layer and parameterized queries for normal database access, reducing SQL-injection risk.
-
-### Functional versus non-functional requirements?
-
-Functional requirements describe what the system does: submit, track, assign, resolve. Non-functional requirements describe quality targets: availability, speed, security, accessibility, and backup retention.
-
-### Why can an issue remain open after code is merged?
-
-Some acceptance criteria need real operational evidence: 200/500-user load tests, monthly uptime, OWASP scan, deployed TLS certificate, or a staging restore. Code alone cannot prove those targets.
-
-## 16. Current limitations and next steps
+## 14. Current limitations and next steps
 
 - Complete follow-up-comment and feedback/rating UI.
 - Run JMeter performance and concurrency tests.
@@ -235,7 +195,7 @@ Some acceptance criteria need real operational evidence: 200/500-user load tests
 - Run OWASP ZAP and Lighthouse scans.
 - Move from local demo database to the team-approved production database during deployment.
 
-## 17. Team responsibilities
+## 15. Team responsibilities
 
 - **Backend:** authentication, authorization, workflow, validation, audit, reporting, security, monitoring and deployment configuration.
 - **Frontend:** citizen forms, dashboards, public tracking, feedback, responsiveness and accessibility.
