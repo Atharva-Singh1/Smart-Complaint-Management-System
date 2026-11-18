@@ -1,0 +1,18 @@
+name: Availability endpoint smoke check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check configured production health endpoint
+        env:
+          SCMS_HEALTHCHECK_URL: ${{ secrets.SCMS_HEALTHCHECK_URL }}
+        run: |
+          test -n "$SCMS_HEALTHCHECK_URL"
+          response=$(curl --fail --silent --show-error --max-time 20 "$SCMS_HEALTHCHECK_URL")
+          echo "$response" | grep -q '"status": "ok"'
