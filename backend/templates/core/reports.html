@@ -1,0 +1,15 @@
+{% extends "core/base.html" %}
+{% block title %}SCMS | Complaint reports{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Complaint reports</h1>
+  <p>Export a date-bounded, filtered report in CSV or PDF format. A report may contain at most 10,000 complaints.</p>
+  {% if error %}<p class="errorlist">{{ error }}</p>{% endif %}
+  <form method="get" class="two">
+    <div><label for="start_date">Start date</label><input id="start_date" type="date" name="start_date" value="{{ start_date }}" required></div>
+    <div><label for="end_date">End date</label><input id="end_date" type="date" name="end_date" value="{{ end_date }}" required></div>
+    <div><label for="status">Status</label><select id="status" name="status"><option value="">All statuses</option>{% for value,label in statuses %}<option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><button name="format" value="csv">Download CSV</button><button name="format" value="pdf">Download PDF</button></div>
+  </form>
+</section>
+{% endblock %}

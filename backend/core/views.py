@@ -8,12 +8,13 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import AssignmentForm, ComplaintForm, StatusForm
 from .models import AssignmentEmail, Complaint, Evidence, RejectionEmail, ResolutionProof
+from .reporting import ReportFilterError, ReportLimitError, csv_content, filtered_complaints, pdf_content
 
 
 def home(request):
@@ -220,3 +221,38 @@ def manage_complaint(request, tracking_id):
     )
 from functools import wraps
 
+@login_required
+@staff_or_admin_required
+@require_http_methods(["GET"])
+def complaint_report(request):
+    context = {
+        "statuses": Complaint.Status.choices,
+        "start_date": request.GET.get("start_date", ""),
+        "end_date": request.GET.get("end_date", ""),
+        "selected_status": request.GET.get("status", ""),
+    }
+    report_format = request.GET.get("format")
+    if not report_format:
+        return render(request, "core/reports.html", context)
+    if report_format not in {"csv", "pdf"}:
+        return render(request, "core/reports.html", {**context, "error": "Select CSV or PDF."}, status=400)
+    try:
+        complaints = filtered_complaints(
+            Complaint.objects.all(),
+            start_date_text=context["start_date"],
+            end_date_text=context["end_date"],
+            status=context["selected_status"],
+        )
+    except (ReportFilterError, ReportLimitError) as error:
+        return render(request, "core/reports.html", {**context, "error": str(error)}, status=400)
+    filename = f"scms-complaints-{context['start_date']}-to-{context['end_date']}"
+    if report_format == "csv":
+        response = HttpResponse(csv_content(complaints), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}.csv"'
+        return response
+    response = HttpResponse(
+        pdf_content(complaints, start_date_text=context["start_date"], end_date_text=context["end_date"]),
+        content_type="application/pdf",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
+    return response
