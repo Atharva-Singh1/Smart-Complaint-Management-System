@@ -8,11 +8,13 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from .forms import AssignmentForm, ComplaintForm, StatusForm
+from django.db import DatabaseError
+from .health import readiness_payload
 from .models import AssignmentEmail, Complaint, Evidence, RejectionEmail, ResolutionProof
 from .reporting import ReportFilterError, ReportLimitError, csv_content, filtered_complaints, pdf_content
 
@@ -256,3 +258,12 @@ def complaint_report(request):
     )
     response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
     return response
+
+
+@require_http_methods(["GET"])
+def health(request):
+    """Public readiness endpoint used only by uptime monitoring."""
+    try:
+        return JsonResponse(readiness_payload())
+    except DatabaseError:
+        return JsonResponse({"status": "unavailable"}, status=503)
