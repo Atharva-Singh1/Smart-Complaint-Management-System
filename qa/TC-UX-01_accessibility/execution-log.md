@@ -62,3 +62,13 @@ none so far
 ## Notes / limitations
 
 Target is a score >= 90; fix and re-run for any page below it.
+
+## Lighthouse results (executed 2026-11-19)
+
+| Page | Desktop score | Mobile score |
+|---|---|---|
+| Lodge `/complaints/new/` (logged in) | 100 | 100 |
+
+Screenshots: `evidence/lighthouse-lodge-desktop.png`, `evidence/lighthouse-lodge-mobile.png`.
+Other pages, keyboard-only navigation and the screen-reader pass have not been run yet, so the
+result stays PARTIAL.

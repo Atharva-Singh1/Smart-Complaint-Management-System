@@ -65,3 +65,12 @@ team lead that rejection satisfies AC for SCMS-F-008.
 The validator rejects any "<" followed by a letter, even after spaces, so plain text such as
 "Pressure < a bar" is also rejected. This errs on the safe side; confirm with the team that
 this is acceptable for citizen complaints.
+
+## Browser checks (executed 2026-11-19)
+
+- Empty submission on the lodge form is blocked and the first required field is flagged
+  (`evidence/empty-form.png`).
+- `<script>alert(1)</script>` in Title is rejected with the server-side error and no alert fires
+  (`evidence/script-payload-rejected.png`).
+
+Result stays PARTIAL until the team confirms that "rejected" satisfies the STP's "sanitized".
