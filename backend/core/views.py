@@ -101,7 +101,8 @@ def track(request):
     tracking_id = request.POST.get("tracking_id") or request.GET.get("tracking_id")
     complaint = None
     if tracking_id:
-        complaint = Complaint.objects.filter(tracking_id__iexact=tracking_id.strip()).first()
+        tracking_id = tracking_id.strip()[:64]
+        complaint = Complaint.objects.filter(tracking_id__iexact=tracking_id).first()
         if complaint is None:
             messages.error(request, "No complaint was found for that tracking ID.")
     return render(
