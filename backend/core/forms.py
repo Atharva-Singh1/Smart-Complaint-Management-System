@@ -28,6 +28,9 @@ class RegistrationForm(forms.ModelForm):
         model = User
         fields = ["full_name", "email", "phone", "password"]
 
+    def clean_full_name(self):
+        return validate_plain_text(self.cleaned_data["full_name"])
+
     def clean(self):
         cleaned = super().clean()
         password = cleaned.get("password")
@@ -122,7 +125,6 @@ class AssignmentForm(forms.Form):
             role__in=[User.Role.STAFF, User.Role.ADMIN]
         )
 
-
     def clean_internal_note(self):
         return validate_plain_text(self.cleaned_data["internal_note"])
 
@@ -141,10 +143,10 @@ class StatusForm(forms.Form):
         validators=[FileExtensionValidator(["jpg", "jpeg", "png"]), validate_proof_image_content],
         help_text="Required when setting status to Resolved.",
     )
-    def clean_note(self):
-        return validate_plain_text(self.cleaned_data["note"])
-
     rejection_code = forms.ChoiceField(
         choices=[("", "Select a justification code")] + list(Complaint.RejectionCode.choices),
         required=False,
     )
+
+    def clean_note(self):
+        return validate_plain_text(self.cleaned_data["note"])
