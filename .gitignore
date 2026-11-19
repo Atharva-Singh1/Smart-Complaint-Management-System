@@ -10,3 +10,4 @@ htmlcov/
 *.sqlite3
 backend/media/
 test-results.xml
+.DS_Store
