@@ -21,7 +21,7 @@ Zero High or Critical severity SQLi/XSS vulnerabilities identified.
 
 ## Automated checks (executed)
 
-Command: `cd backend && python -m pytest` -> **103 passed in 3.33 s**.
+Command: `cd backend && python -m pytest` -> **103 passed in 2.33 s**.
 
 - `backend/tests/test_sqli_xss_hardening.py` (14 tests): four SQLi payloads against login,
   public tracking and the triage status/ward filters (no authentication bypass, no data

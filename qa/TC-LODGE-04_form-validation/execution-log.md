@@ -21,7 +21,7 @@ Submission halts; UI marks mandatory fields red; XSS strings are sanitized.
 
 ## Automated checks (executed)
 
-Command: `cd backend && python -m pytest` -> **103 passed in 3.33 s** (46 pre-existing, 57 new).
+Command: `cd backend && python -m pytest` -> **103 passed in 2.33 s** (46 pre-existing, 57 new).
 
 Relevant files:
 
@@ -61,3 +61,7 @@ none
 
 The STP says XSS strings are "sanitized"; the implementation rejects them. Confirm with the
 team lead that rejection satisfies AC for SCMS-F-008.
+
+The validator rejects any "<" followed by a letter, even after spaces, so plain text such as
+"Pressure < a bar" is also rejected. This errs on the safe side; confirm with the team that
+this is acceptable for citizen complaints.
